@@ -1,4 +1,5 @@
 const express = require('express');
+const Product = require('./models/Product');
 
 const app = express();
 
@@ -17,58 +18,118 @@ app.use((req, res, next) => {
   next();
 });
 
-const products = [
-  {
-    _id: 'oeihfzeoi',
-    name: 'Product 1',
-    description: 'Description of product 1',
-    price: 10.99,
-    quantity: 50,
-    image:
-      'https://cdn.pixabay.com/photo/2015/05/04/10/16/vegetables-752153_1280.jpg',
-  },
-  {
-    _id: 'oeihfzeon',
-    name: 'Product 2',
-    description: 'Description of product 2',
-    price: 19.99,
-    quantity: 30,
-    image:
-      'https://cdn.pixabay.com/photo/2015/05/04/10/16/vegetables-752153_1280.jpg',
-  },
-];
-
 // Create a new product
-app.post('/api/products', (req, res) => {
+app.post('/api/products', async (req, res) => {
   const { name, description, price, quantity, image } = req.body;
-  console.log(req.body);
 
   // Validate the request body
   if (!name || !description || !price || !quantity || !image) {
     return res.status(400).json({ message: 'Incomplete product information' });
   }
 
-  // Generate a unique ID
-  const newProduct = {
-    _id: Date.now().toString(),
-    name,
-    description,
-    price,
-    quantity,
-    image,
-  };
+  try {
+    // Create a new instance of Product with the data from the request body
+    const newProduct = new Product({
+      name,
+      description,
+      price,
+      quantity,
+      image,
+    });
 
-  // Add the new product to the products array
-  products.push(newProduct);
+    // Save the new product to the database
+    const savedProduct = await newProduct.save();
 
-  res
-    .status(201)
-    .json({ product: newProduct, message: 'New product added successfully' });
+    res.status(201).json({
+      product: savedProduct,
+      message: 'New product added successfully',
+    });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: 'Failed to add new product', error: error.message });
+  }
 });
 
 // Get all products
-app.get('/api/products', (req, res) => {
-  res.status(200).json(products);
+app.get('/api/products', async (req, res) => {
+  try {
+    const products = await Product.find();
+    res.status(200).json(products);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Failed to fetch products', error: error.message });
+  }
+});
+
+// Get a specific product by ID from the database
+app.get('/api/products/:productId', async (req, res) => {
+  const productId = req.params.productId;
+
+  try {
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json(product);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Failed to fetch product', error: error.message });
+  }
+});
+
+// Update a specific product by ID
+app.put('/api/products/:productId', async (req, res) => {
+  const productId = req.params.productId;
+  const { name, description, price, quantity, image, userId } = req.body;
+
+  try {
+    const product = await Product.findByIdAndUpdate(
+      productId,
+      {
+        name,
+        description,
+        price,
+        quantity,
+        image,
+        userId,
+      },
+      { new: true },
+    );
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ product, message: 'Product updated successfully' });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Failed to update product', error: error.message });
+  }
+});
+
+// Delete a specific product by ID
+app.delete('/api/products/:productId', async (req, res) => {
+  const productId = req.params.productId;
+
+  try {
+    const product = await Product.findByIdAndDelete(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.status(200).json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Failed to delete product', error: error.message });
+  }
 });
 
 module.exports = app;

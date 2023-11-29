@@ -1,48 +1,34 @@
-const http = require('http');
 const app = require('./app');
+const express = require('express');
+const mongoose = require('mongoose');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const path = require('path');
+require('dotenv').config();
 
-const normalizePort = (val) => {
-  const port = parseInt(val, 10);
+// Set up middleware
+app.use(helmet());
+app.use(morgan('combined'));
+app.use(express.json());
 
-  if (isNaN(port)) {
-    return val;
-  }
-  if (port >= 0) {
-    return port;
-  }
-  return false;
-};
-const port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-const errorHandler = (error) => {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-  const address = server.address();
-  const bind =
-    typeof address === 'string' ? 'pipe ' + address : 'port: ' + port;
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges.');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use.');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-};
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.error('Error connecting to MongoDB:', error.message);
+  });
 
-const server = http.createServer(app);
-
-server.on('error', errorHandler);
-server.on('listening', () => {
-  const address = server.address();
-  const bind = typeof address === 'string' ? 'pipe ' + address : 'port ' + port;
-  console.log('Listening on ' + bind);
+app.get('/', async (req, res) => {
+  res.render('home');
 });
 
-server.listen(port);
+const port = process.env.PORT || 3001;
+
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
