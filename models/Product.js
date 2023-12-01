@@ -23,7 +23,7 @@ const productSchema = new mongoose.Schema({
   },
   userId: {
     type: String,
-    required: false,
+    required: true,
   },
 });
 
