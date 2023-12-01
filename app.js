@@ -1,5 +1,6 @@
 const express = require('express');
-const productRoutes = require('./routes/product');
+const productRoutes = require('./routes/productRouter');
+const userRoutes = require('./routes/userRouter');
 
 const app = express();
 
@@ -19,5 +20,6 @@ app.use((req, res, next) => {
 });
 
 app.use('/api/products', productRoutes);
+app.use('/api/auth', userRoutes);
 
 module.exports = app;
